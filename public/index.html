@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Notes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+    h1 { text-align: center; color: #4f46e5; margin-bottom: 20px; }
+    .box { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto 20px; }
+    textarea { width: 100%; height: 100px; padding: 10px; font-size: 15px; border-radius: 8px; border: 1px solid #ddd; resize: vertical; }
+    button { margin-top: 10px; padding: 10px 24px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%; }
+    button:hover { background: #4338ca; }
+    .note { background: white; padding: 14px; border-radius: 10px; margin: 10px auto; max-width: 600px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .note p { white-space: pre-wrap; flex: 1; color: #333; }
+    .del { background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
+    .del:hover { background: #dc2626; }
+    .empty { text-align: center; color: #aaa; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>📝 My Notes</h1>
+  <div class="box">
+    <textarea id="noteInput" placeholder="Write your note here..."></textarea>
+    <button onclick="saveNote()">💾 Save Note</button>
+  </div>
+  <div id="notesList"></div>
+
+  <script>
+    async function loadNotes() {
+      const res = await fetch('/api/notes');
+      const notes = await res.json();
+      const list = document.getElementById('notesList');
+      if (notes.length === 0) {
+        list.innerHTML = '<p class="empty">No notes yet. Write something above!</p>';
+        return;
+      }
+      list.innerHTML = notes.reverse().map(n => `
+        <div class="note">
+          <p>${n.text}</p>
+          <button class="del" onclick="deleteNote(${n.id})">🗑 Delete</button>
+        </div>
+      `).join('');
+    }
+
+    async function saveNote() {
+      const text = document.getElementById('noteInput').value.trim();
+      if (!text) return alert('Please write something first!');
+      await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      document.getElementById('noteInput').value = '';
+      loadNotes();
+    }
+
+    async function deleteNote(id) {
+      if (!confirm('Delete this note?')) return;
+      await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+      loadNotes();
+    }
+
+    loadNotes();
+  </script>
+</body>
+</html>
